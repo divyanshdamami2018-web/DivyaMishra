@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import {
   Users, Calendar, Clock, CheckCircle, XCircle,
   Star, Search, CalendarDays, IndianRupee, RefreshCw, BrainCircuit,
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const API = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -38,7 +38,7 @@ const AdminDashboard = () => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/sessions`, API());
+      const res = await api.get('/admin/sessions', authHeader());
       setBookings(res.data.bookings);
       setStats(res.data.stats);
     } catch (err) {
@@ -50,7 +50,7 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/users`, API());
+      const res = await api.get('/admin/users', authHeader());
       setUsers(res.data.users);
     } catch (err) {
       console.error('Failed to load users', err);
@@ -59,7 +59,7 @@ const AdminDashboard = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/analytics`, API());
+      const res = await api.get('/admin/analytics', authHeader());
       setAnalytics(res.data.analytics);
     } catch (err) {
       console.error('Analytics fetch error', err);
@@ -69,7 +69,7 @@ const AdminDashboard = () => {
   const handleCancel = async (id) => {
     if (!window.confirm('Are you sure you want to cancel this session?')) return;
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/api/admin/sessions/${id}/cancel`, { reason: 'Administrative Conflict' }, API());
+      await api.put(`/admin/sessions/${id}/cancel`, { reason: 'Administrative Conflict' }, authHeader());
       toast.success('Session cancelled & client notified');
       fetchAdminData();
     } catch (err) {
@@ -83,10 +83,10 @@ const AdminDashboard = () => {
       return;
     }
     try {
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/admin/sessions/${selectedBooking._id}/reschedule`,
+      await api.put(
+        `/admin/sessions/${selectedBooking._id}/reschedule`,
         { newDate: rescheduleData.date, newTime: rescheduleData.time, reason: rescheduleData.reason },
-        API()
+        authHeader()
       );
       toast.success('Session rescheduled & client notified');
       setSelectedBooking(null);
@@ -99,7 +99,7 @@ const AdminDashboard = () => {
 
   const handleComplete = async (id) => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/api/admin/sessions/${id}/complete`, {}, API());
+      await api.put(`/admin/sessions/${id}/complete`, {}, authHeader());
       toast.success('Session marked as completed');
       fetchAdminData();
     } catch (err) {
@@ -110,7 +110,7 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Remove this user account? Their booking history will be preserved.")) return;
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/admin/users/${id}`, API());
+      await api.delete(`/admin/users/${id}`, authHeader());
       toast.success('User account removed');
       fetchUsers();
     } catch (err) {
