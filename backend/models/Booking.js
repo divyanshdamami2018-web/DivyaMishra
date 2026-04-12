@@ -24,6 +24,25 @@ const bookingSchema = new mongoose.Schema({
     message: String
   },
 
+  status: {
+    type: String,
+    enum: ["pending", "confirmed", "cancelled", "rescheduled"],
+    default: "confirmed"
+  },
+  rescheduleNotes: String,
+
+  assessment: {
+    age: Number,
+    gender: String,
+    cityState: String,
+    education: String,
+    occupation: String,
+    income: String,
+    primaryConcern: String,
+    moodRating: Number,
+    description: String
+  },
+
   createdAt: { type: Date, default: Date.now }
 });
 

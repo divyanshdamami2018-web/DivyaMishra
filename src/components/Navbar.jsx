@@ -10,6 +10,10 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
+    { name: 'Therapy', path: '/therapy' },
+    { name: 'Career', path: '/career' },
+    { name: 'Blog', path: '/blog' },
     { name: 'Contact', path: '/contact' },
   ];
 
@@ -19,10 +23,7 @@ const Navbar = () => {
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2 group">
-              <div className="bg-primaryLight p-2 rounded-xl group-hover:bg-primary transition-colors">
-                <HeartHandshake className="h-6 w-6 text-primary group-hover:text-white" />
-              </div>
-              <span className="font-bold text-2xl text-slate-800 tracking-tight">MindfulPath</span>
+              <span className="font-bold text-2xl text-slate-800 tracking-tight">Divya Mishra</span>
             </Link>
           </div>
 
@@ -50,6 +51,17 @@ const Navbar = () => {
                 >
                   Dashboard
                 </Link>
+
+                {user.role === 'admin' && (
+                  <Link
+                    to="/admin-panel"
+                    className={`text-sm font-bold tracking-wide px-4 py-2 rounded-xl transition-all ${
+                      location.pathname === '/admin-panel' ? 'bg-primary text-white' : 'text-primary bg-primary/10 hover:bg-primary/20'
+                    }`}
+                  >
+                    Admin Panel
+                  </Link>
+                )}
                 <div className="flex items-center space-x-2 text-slate-700">
                   <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-primary" />
@@ -124,6 +136,22 @@ const Navbar = () => {
                   </div>
                   <span className="font-bold text-slate-800">{user.name}</span>
                 </div>
+                {user.role === 'admin' && (
+                  <Link
+                    to="/admin-panel"
+                    onClick={() => setIsOpen(false)}
+                    className="block px-4 py-3 text-base font-bold text-primary bg-primary/10 rounded-2xl transition-colors"
+                  >
+                    Admin Panel
+                  </Link>
+                )}
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-3 text-base font-bold text-slate-700 hover:text-primary hover:bg-emerald-50 rounded-2xl transition-colors"
+                >
+                  Dashboard
+                </Link>
                 <button
                   onClick={() => {
                     logout();

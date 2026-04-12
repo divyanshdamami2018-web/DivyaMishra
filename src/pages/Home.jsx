@@ -1,8 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, UserCheck, CalendarCheck, CreditCard, Quote, ArrowRight } from 'lucide-react';
 
 const Home = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const images = [
+    '/sanctuary/room1.png',
+    '/sanctuary/room2.png',
+    '/sanctuary/room3.png',
+    '/sanctuary/room4.png',
+    '/sanctuary/room5.png',
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 4000); // Change image every 4 seconds
+    return () => clearInterval(timer);
+  }, [images.length]);
+
   return (
     <div className="flex flex-col min-h-screen font-sans">
       {/* Hero Section */}
@@ -17,8 +35,10 @@ const Home = () => {
               Your Journey to <br />
               <span className="text-primary italic">Inner Peace</span> Starts Here.
             </h1>
-            <p className="text-xl text-slate-600 max-w-xl leading-relaxed">
-              Experience the guidance of <span className="font-bold text-slate-800">Divya Mishra</span>, a certified clinical psychologist dedicated to providing a serene, safe, and professional environment for your mental growth.
+            <p className="text-xl text-slate-600 max-w-2xl leading-relaxed">
+              Here, therapy goes beyond traditional boundaries—it becomes a journey of self-discovery, resilience, and growth. Rooted in India's timeless wisdom and aligned with modern global psychology, this platform is inspired by <span className="font-bold text-primary">Vasudhaiva Kutumbakam</span>—the belief that the world is one family.
+              <br /><br />
+              Every individual here is seen, heard, and supported.
             </p>
             <div className="flex flex-col sm:flex-row gap-5 pt-6">
               <Link
@@ -40,14 +60,23 @@ const Home = () => {
           </div>
           
           <div className="lg:w-1/2 flex justify-center lg:justify-end animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="relative group">
+            <div className="relative group w-[90vw] sm:w-[400px] lg:w-[500px]">
               <div className="absolute -inset-10 bg-emerald-200/30 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-1000"></div>
-              <div className="glass-card p-4 rounded-[40px] transform rotate-2 group-hover:rotate-0 transition-transform duration-700">
-                <img 
-                  src="/hero-zen.png" 
-                  alt="Mindful Sanctuary" 
-                  className="rounded-[32px] shadow-2xl object-cover w-full h-[450px] lg:h-[600px] max-w-lg"
-                />
+              <div className="glass-card p-4 rounded-[40px] transform rotate-2 group-hover:rotate-0 transition-transform duration-700 overflow-hidden w-full">
+                <div className="relative w-full h-[450px] lg:h-[600px] overflow-hidden rounded-[32px] shadow-2xl">
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={currentImageIndex}
+                      src={images[currentImageIndex]}
+                      alt="Mindful Sanctuary"
+                      initial={{ opacity: 0, scale: 1.1 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           </div>
@@ -59,7 +88,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
             <div className="max-w-2xl">
-              <h2 className="text-primary font-bold tracking-widest uppercase text-sm mb-4">The MindfulPath Difference</h2>
+              <h2 className="text-primary font-bold tracking-widest uppercase text-sm mb-4">The Clinical Difference</h2>
               <h3 className="text-4xl md:text-5xl font-bold text-slate-800">Holistic Care <span className="text-slate-400 font-light">for the Modern Soul</span></h3>
             </div>
             <p className="text-slate-500 text-lg max-w-sm">We provide world-class clinical support using evidence-based therapy in a calming digital ecosystem.</p>
@@ -97,7 +126,7 @@ const Home = () => {
             </div>
             <div className="lg:w-3/5 p-12 lg:p-20 flex flex-col justify-center space-y-8">
                <div className="space-y-4">
-                 <h2 className="text-primary font-bold tracking-widest uppercase text-sm">Lead Clinical Psychologist</h2>
+                 <h2 className="text-primary font-bold tracking-widest uppercase text-sm">Counseling Psychologist</h2>
                  <h3 className="text-4xl md:text-5xl font-bold text-slate-800">Divya Mishra</h3>
                  <p className="text-2xl text-slate-500 font-light leading-relaxed">
                    "Empathy is the cornerstone of healing. I offer a non-judgmental space to navigate your complexities with resilience."
@@ -112,7 +141,7 @@ const Home = () => {
                    <ul className="space-y-3 text-slate-600">
                      <li>• M.A. in Clinical Psychology (BHU)</li>
                      <li>• PG Diploma in Psychotherapy</li>
-                     <li>• Evidence-based CBT Specialist</li>
+                     <li>• Evidence-based Psychotherapy</li>
                    </ul>
                  </div>
                  <div className="space-y-5">
@@ -168,7 +197,7 @@ const Home = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {[
-              { name: 'Sarah L.', text: "Truly life-changing. The serene approach and professional depth at MindfulPath helped me reclaim my joy." },
+              { name: 'Sarah L.', text: "Truly life-changing. The serene approach and professional depth helped me reclaim my joy." },
               { name: 'Michael T.', text: "The most effortless booking system I've used. Clinical expertise delivered with genuine empathy." },
               { name: 'Priya M.', text: "Highly recommended for those seeking a professional and secure space to speak their heart out." },
             ].map((review, i) => (

@@ -47,6 +47,7 @@ exports.verifyPayment = async (req, res) => {
         phone: formData.phone,
         date: formData.date,
         time: formData.timeSlot,
+        assessment: formData.assessment || {},
         paymentStatus: "paid",
         ticketId
       });
@@ -54,14 +55,14 @@ exports.verifyPayment = async (req, res) => {
       await booking.save();
       
       // 1. Create formatted messages
-      const userMessage = `🌿 *MindfulPath Booking Confirmed* 🌿\n\nHello *${formData.name}*, your session is secured!\n\n🎟️ *Ticket ID:* ${ticketId}\n📅 *Date:* ${formData.date}\n⏰ *Time Slot:* ${formData.timeSlot}\n\n*Next Steps:*\nA session link will be shared with you 15 minutes before the start time. \n\nPlease keep this ticket for your reference.`;
+      const userMessage = `🌿 *Counseling Psychologist Booking Confirmed* 🌿\n\nHello *${formData.name}*, your session is secured!\n\n🎟️ *Ticket ID:* ${ticketId}\n📅 *Date:* ${formData.date}\n⏰ *Time Slot:* ${formData.timeSlot}\n\n*Next Steps:*\nA session link will be shared with you 15 minutes before the start time. \n\nPlease keep this ticket for your reference.`;
       
-      const adminMessage = `New Booking Alert! 🔔\n\nClient: ${formData.name}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nDate: ${formData.date}\nTime: ${formData.timeSlot}\nTicket ID: ${ticketId}`;
+      const adminMessage = `New Booking Alert! 🔔\n\nClient: ${formData.name}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nDate: ${formData.date}\nTime: ${formData.timeSlot}\nTicket ID: ${ticketId}\n\n*Assessment Details:*\nAge: ${formData.assessment?.age || "N/A"}\nGender: ${formData.assessment?.gender || "N/A"}\nOccupation: ${formData.assessment?.occupation || "N/A"}\nEducation: ${formData.assessment?.education || "N/A"}\nIncome: ${formData.assessment?.income || "N/A"}\nConcern: ${formData.assessment?.primaryConcern || "N/A"}\nMood Index: ${formData.assessment?.moodRating || "N/A"}/10\nNote: ${formData.assessment?.description || "N/A"}`;
 
       // 2. Dispatch User Notifications (PRIORITY)
       try {
         await Promise.all([
-          sendEmail(formData.email, "Session Confirmed - MindfulPath", userMessage),
+          sendEmail(formData.email, "Session Confirmed - Counseling Psychologist", userMessage),
           sendWhatsApp(formData.phone, userMessage)
         ]);
         console.log(`User notifications sent successfully to ${formData.email} and ${formData.phone}`);

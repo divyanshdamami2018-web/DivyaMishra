@@ -11,7 +11,13 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import About from './pages/About';
+import Therapy from './pages/Therapy';
+import Career from './pages/Career';
+import Blog from './pages/Blog';
+import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
@@ -41,6 +47,18 @@ function App() {
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
+                } 
+              />
+              <Route path="/about" element={<About />} />
+              <Route path="/therapy" element={<Therapy />} />
+              <Route path="/career" element={<Career />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route 
+                path="/admin-panel" 
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
                 } 
               />
             </Routes>

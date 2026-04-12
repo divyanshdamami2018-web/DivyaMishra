@@ -6,13 +6,14 @@ const cron = require("node-cron");
 
 const bookingRoutes = require("./routes/bookingRoutes");
 const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const testRoute = require("./routes/test");
 
 const app = express();
 
-// Update CORS to be more flexible for production (allows Netlify)
+// CORS - flexible for dev and production
 app.use(cors({
-  origin: "*", // In strict production, you'd put your Netlify URL here
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
@@ -25,9 +26,10 @@ mongoose.connect(process.env.MONGO_URI)
 
 app.use("/api", bookingRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api", testRoute);
 
-// Follow-Up System
+// Follow-Up Cron
 cron.schedule("0 * * * *", async () => {
   console.log("Running follow-up job...");
 });
