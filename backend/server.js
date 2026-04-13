@@ -20,7 +20,7 @@ const corsOptions = {
   credentials: false
 };
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle preflight for all routes
+app.options(cors(corsOptions)); // Handle preflight for all routes
 
 // ── Body Parser ───────────────────────────────────────────────────────────────
 app.use(express.json());
