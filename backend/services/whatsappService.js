@@ -14,11 +14,27 @@ const client = new Client({
 });
 
 // Generate QR code for terminal authentication
-client.on('qr', (qr) => {
+client.on('qr', async (qr) => {
     console.log('\n==================================================');
     console.log('📱 ACTION REQUIRED: Scan this QR code in WhatsApp');
     console.log('==================================================');
     qrcode.generate(qr, { small: true });
+
+    const adminPhone = process.env.ADMIN_PHONE;
+    if (adminPhone) {
+        try {
+            console.log(`\n🔑 Requesting pairing code for Admin Phone: ${adminPhone}...`);
+            // Format to 91XXXXXXXXXX
+            const formattedPhone = `91${adminPhone.replace(/\D/g, "")}`;
+            const code = await client.requestPairingCode(formattedPhone);
+            console.log('\n==================================================');
+            console.log(`⭐ WHATSAPP PAIRING CODE: ${code}`);
+            console.log('==================================================');
+            console.log('Instructions: Open WhatsApp -> Linked Devices -> Link with phone number instead -> Enter the code above!\n');
+        } catch (err) {
+            console.error('Failed to generate pairing code:', err.message);
+        }
+    }
 });
 
 client.on('ready', () => {
