@@ -6,7 +6,9 @@ const {
   verifyPayment,
   submitFeedback,
   getMyBookings,
-  handleContactForm
+  handleContactForm,
+  requestCancelSession,
+  requestRescheduleSession
 } = require("../controllers/bookingController");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -15,5 +17,7 @@ router.post("/verify-payment", verifyPayment);
 router.post("/submit-feedback", submitFeedback);
 router.post("/contact", handleContactForm);
 router.get("/my-bookings", authMiddleware, getMyBookings);
+router.post("/bookings/:id/request-cancel", authMiddleware, requestCancelSession);
+router.post("/bookings/:id/request-reschedule", authMiddleware, requestRescheduleSession);
 
 module.exports = router;

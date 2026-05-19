@@ -1,7 +1,10 @@
 const Booking = require("../models/Booking");
 const User = require("../models/User");
 const sendEmail = require("../services/emailService");
-const { sendWhatsApp } = require("../services/whatsappService");
+const { sendWhatsAppAlert } = require("../services/whatsappService");
+const Razorpay = require('razorpay');
+
+const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY, key_secret: process.env.RAZORPAY_SECRET });
 
 // 1. Get All Sessions with Stats
 exports.getAllSessions = async (req, res) => {
@@ -110,7 +113,22 @@ exports.cancelSession = async (req, res) => {
     const booking = await Booking.findById(id);
     if (!booking) return res.status(404).json({ error: "Session not found" });
 
+    if (booking.paymentStatus === 'paid' && booking.paymentId) {
+        try {
+            const refundResponse = await razorpay.payments.refund(booking.paymentId, {
+                amount: booking.amount,
+                notes: { reason: reason || "Cancelled by Practitioner via Dashboard Admin Portal" }
+            });
+            console.log(`Refund initiated successfully: ${refundResponse.id}`);
+        } catch (refundError) {
+            console.error("Razorpay Refund Error:", refundError);
+            // Optionally, handle failure to refund but still cancel the booking, or return error.
+            // We'll proceed with cancellation but log the refund failure.
+        }
+    }
+
     booking.status = "cancelled";
+    booking.paymentStatus = 'failed';
     await booking.save();
 
     // Notify User
@@ -119,7 +137,7 @@ exports.cancelSession = async (req, res) => {
     try {
       await Promise.all([
         sendEmail(booking.email, "Session Cancellation Notification", cancelMsg),
-        sendWhatsApp(booking.phone, cancelMsg)
+        sendWhatsAppAlert(booking.phone, cancelMsg)
       ]);
     } catch (err) {
       console.error("Cancellation Notify Error:", err.message);
@@ -157,7 +175,7 @@ exports.rescheduleSession = async (req, res) => {
     try {
       await Promise.all([
         sendEmail(booking.email, "Session Rescheduled Notice", rescheduleMsg),
-        sendWhatsApp(booking.phone, rescheduleMsg)
+        sendWhatsAppAlert(booking.phone, rescheduleMsg)
       ]);
     } catch (err) {
       console.error("Reschedule Notify Error:", err.message);
@@ -183,5 +201,164 @@ exports.completeSession = async (req, res) => {
     res.json({ success: true, message: "Session marked as completed" });
   } catch (err) {
     res.status(500).json({ error: "Failed to complete session" });
+  }
+};
+
+// 8. Approve Cancellation Request
+exports.approveCancelRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id);
+    if (!booking) return res.status(404).json({ error: "Session not found" });
+
+    if (booking.paymentStatus === 'paid' && booking.paymentId) {
+        try {
+            const refundResponse = await razorpay.payments.refund(booking.paymentId, {
+                amount: booking.amount,
+                notes: { reason: `Approved cancellation request: ${booking.cancelReason}` }
+            });
+            console.log(`Refund initiated successfully: ${refundResponse.id}`);
+        } catch (refundError) {
+            console.error("Razorpay Refund Error during approval:", refundError);
+        }
+    }
+
+    booking.status = "cancelled";
+    booking.paymentStatus = 'failed';
+    booking.cancelRequested = false; // Reset request flag
+    await booking.save();
+
+    // Notify User
+    const cancelMsg = 
+      `🔔 *Cancellation Request Approved*\n\n` +
+      `Hello *${booking.name}*,\n\n` +
+      `Your request to cancel your therapy session (ID: ${booking.ticketId}) has been *APPROVED* by the specialist.\n\n` +
+      `💳 A full refund of *₹${booking.amount / 100}* has been initiated via Razorpay and will reflect in your account within 5-7 business days.\n\n` +
+      `If you have any questions, feel free to contact us. 🌿`;
+
+    try {
+      await Promise.all([
+        sendEmail(booking.email, "Session Cancellation Request Approved ✅", cancelMsg),
+        sendWhatsAppAlert(booking.phone, cancelMsg)
+      ]);
+    } catch (err) {
+      console.error("Cancellation approval notification error:", err.message);
+    }
+
+    res.json({ success: true, message: "Cancellation request approved and refunded successfully" });
+  } catch (err) {
+    console.error("Approve Cancel Error:", err);
+    res.status(500).json({ error: "Failed to approve cancellation" });
+  }
+};
+
+// 9. Reject Cancellation Request
+exports.rejectCancelRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const booking = await Booking.findById(id);
+    if (!booking) return res.status(404).json({ error: "Session not found" });
+
+    booking.cancelRequested = false; // Reset request flag
+    await booking.save();
+
+    // Notify User
+    const rejectMsg = 
+      `❌ *Cancellation Request Update*\n\n` +
+      `Hello *${booking.name}*,\n\n` +
+      `Your cancellation request for session (ID: ${booking.ticketId}) could not be approved at this time.\n\n` +
+      `*Therapist note:* ${reason || "Last-minute cancellation policy conflict. Please join the scheduled slot."}\n\n` +
+      `Your session remains confirmed for *${booking.date}* at *${booking.time}*. See you there! 💚`;
+
+    try {
+      await Promise.all([
+        sendEmail(booking.email, "Update on your cancellation request", rejectMsg),
+        sendWhatsAppAlert(booking.phone, rejectMsg)
+      ]);
+    } catch (err) {
+      console.error("Cancellation reject notification error:", err.message);
+    }
+
+    res.json({ success: true, message: "Cancellation request rejected and client notified" });
+  } catch (err) {
+    console.error("Reject Cancel Error:", err);
+    res.status(500).json({ error: "Failed to reject cancellation" });
+  }
+};
+
+// 10. Approve Reschedule Request
+exports.approveRescheduleRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id);
+    if (!booking) return res.status(404).json({ error: "Session not found" });
+
+    const oldDate = booking.date;
+    const oldTime = booking.time;
+
+    booking.date = booking.proposedDate;
+    booking.time = booking.proposedTime;
+    booking.status = "rescheduled";
+    booking.rescheduleRequested = false; // Reset request flag
+    await booking.save();
+
+    // Notify User
+    const rescheduleMsg = 
+      `📅 *Reschedule Request Approved ✅*\n\n` +
+      `Hello *${booking.name}*,\n\n` +
+      `Your request to reschedule your therapy session (ID: ${booking.ticketId}) has been *APPROVED*!\n\n` +
+      `*Previous:* ${oldDate} at ${oldTime}\n` +
+      `*New Schedule:* ${booking.date} at ${booking.time}\n\n` +
+      `We look forward to seeing you at the rescheduled time. 💚`;
+
+    try {
+      await Promise.all([
+        sendEmail(booking.email, "Reschedule Request Approved ✅", rescheduleMsg),
+        sendWhatsAppAlert(booking.phone, rescheduleMsg)
+      ]);
+    } catch (err) {
+      console.error("Reschedule approval notification error:", err.message);
+    }
+
+    res.json({ success: true, message: "Reschedule request approved successfully" });
+  } catch (err) {
+    console.error("Approve Reschedule Error:", err);
+    res.status(500).json({ error: "Failed to approve reschedule" });
+  }
+};
+
+// 11. Reject Reschedule Request
+exports.rejectRescheduleRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const booking = await Booking.findById(id);
+    if (!booking) return res.status(404).json({ error: "Session not found" });
+
+    booking.rescheduleRequested = false; // Reset request flag
+    await booking.save();
+
+    // Notify User
+    const rejectMsg = 
+      `❌ *Reschedule Request Update*\n\n` +
+      `Hello *${booking.name}*,\n\n` +
+      `Your request to reschedule session (ID: ${booking.ticketId}) could not be accommodated at this time.\n\n` +
+      `*Therapist note:* ${reason || "The proposed slot is unavailable. Please join the scheduled slot or suggest alternative timings."}\n\n` +
+      `Your session remains confirmed for *${booking.date}* at *${booking.time}*. 💚`;
+
+    try {
+      await Promise.all([
+        sendEmail(booking.email, "Update on your reschedule request", rejectMsg),
+        sendWhatsAppAlert(booking.phone, rejectMsg)
+      ]);
+    } catch (err) {
+      console.error("Reschedule reject notification error:", err.message);
+    }
+
+    res.json({ success: true, message: "Reschedule request rejected and client notified" });
+  } catch (err) {
+    console.error("Reject Reschedule Error:", err);
+    res.status(500).json({ error: "Failed to reject reschedule" });
   }
 };

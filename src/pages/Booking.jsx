@@ -168,7 +168,8 @@ const Booking = () => {
           state: { 
             ticketId: verifyResult.ticketId,
             date: formData.date,
-            time: formData.timeSlot 
+            time: formData.timeSlot,
+            googleMeetLink: verifyResult.googleMeetLink
           } 
         });
       }

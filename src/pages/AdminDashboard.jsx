@@ -97,6 +97,52 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleApproveCancel = async (id) => {
+    if (!window.confirm('Are you sure you want to APPROVE this cancellation and refund request?')) return;
+    try {
+      await api.put(`/admin/sessions/${id}/approve-cancel`, {}, authHeader());
+      toast.success('Cancellation request approved & refund initiated!');
+      fetchAdminData();
+    } catch (err) {
+      toast.error('Failed to approve cancellation request');
+    }
+  };
+
+  const handleRejectCancel = async (id) => {
+    const note = window.prompt('Enter reason for rejecting cancellation (optional):');
+    if (note === null) return; // cancelled prompt
+    try {
+      await api.put(`/admin/sessions/${id}/reject-cancel`, { reason: note }, authHeader());
+      toast.success('Cancellation request rejected & client notified');
+      fetchAdminData();
+    } catch (err) {
+      toast.error('Failed to reject cancellation request');
+    }
+  };
+
+  const handleApproveReschedule = async (id) => {
+    if (!window.confirm('Are you sure you want to APPROVE this reschedule request?')) return;
+    try {
+      await api.put(`/admin/sessions/${id}/approve-reschedule`, {}, authHeader());
+      toast.success('Reschedule request approved & client notified!');
+      fetchAdminData();
+    } catch (err) {
+      toast.error('Failed to approve reschedule request');
+    }
+  };
+
+  const handleRejectReschedule = async (id) => {
+    const note = window.prompt('Enter reason for rejecting reschedule (optional):');
+    if (note === null) return; // cancelled prompt
+    try {
+      await api.put(`/admin/sessions/${id}/reject-reschedule`, { reason: note }, authHeader());
+      toast.success('Reschedule request rejected & client notified');
+      fetchAdminData();
+    } catch (err) {
+      toast.error('Failed to reject reschedule request');
+    }
+  };
+
   const handleComplete = async (id) => {
     try {
       await api.put(`/admin/sessions/${id}/complete`, {}, authHeader());
@@ -132,7 +178,8 @@ const AdminDashboard = () => {
 
   const filteredBookings = bookings.filter(b => {
     const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) || b.ticketId.toLowerCase().includes(searchTerm.toLowerCase());
-    if (filter === 'upcoming') return matchesSearch && (b.status === 'confirmed' || b.status === 'rescheduled');
+    if (filter === 'requests') return matchesSearch && (b.cancelRequested || b.rescheduleRequested);
+    if (filter === 'upcoming') return matchesSearch && (b.status === 'confirmed' || b.status === 'rescheduled') && !b.cancelRequested && !b.rescheduleRequested;
     if (filter === 'cancelled') return matchesSearch && b.status === 'cancelled';
     if (filter === 'completed') return matchesSearch && b.sessionCompleted;
     if (filter === 'feedback') return matchesSearch && b.feedbackSubmitted;
@@ -275,7 +322,7 @@ const AdminDashboard = () => {
               </div>
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center bg-white p-1.5 rounded-[22px] border border-slate-200 shadow-sm gap-1">
-                  {['all', 'upcoming', 'cancelled', 'completed', 'feedback'].map(f => (
+                  {['all', 'requests', 'upcoming', 'cancelled', 'completed', 'feedback'].map(f => (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
@@ -331,16 +378,39 @@ const AdminDashboard = () => {
                           <div className="flex items-center text-slate-400 text-xs mt-1">
                             <Clock className="w-3.5 h-3.5 mr-2 shrink-0" /> {b.time}
                           </div>
+                          {b.rescheduleRequested && (
+                            <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-2.5 space-y-1">
+                              <span className="text-[10px] font-black uppercase text-blue-600 tracking-wider">Proposed New Slot</span>
+                              <div className="text-xs font-bold text-blue-800">{b.proposedDate} @ {b.proposedTime}</div>
+                              {b.requestReason && <div className="text-[10px] text-blue-500 italic">" {b.requestReason} "</div>}
+                            </div>
+                          )}
+                          {b.cancelRequested && (
+                            <div className="mt-3 bg-rose-50 border border-rose-100 rounded-xl p-2.5 space-y-1">
+                              <span className="text-[10px] font-black uppercase text-rose-600 tracking-wider">Cancel Reason</span>
+                              <div className="text-xs font-bold text-rose-800">" {b.cancelReason} "</div>
+                            </div>
+                          )}
                         </td>
                         <td className="px-8 py-5">
-                          <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            b.sessionCompleted ? 'bg-slate-100 text-slate-600' :
-                            b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                            b.status === 'rescheduled' ? 'bg-blue-100 text-blue-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {b.sessionCompleted ? 'Completed' : b.status}
-                          </span>
+                          {b.cancelRequested ? (
+                            <span className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 animate-pulse">
+                              Cancel Req
+                            </span>
+                          ) : b.rescheduleRequested ? (
+                            <span className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 animate-pulse">
+                              Resched Req
+                            </span>
+                          ) : (
+                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              b.sessionCompleted ? 'bg-slate-100 text-slate-600' :
+                              b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                              b.status === 'rescheduled' ? 'bg-blue-100 text-blue-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {b.sessionCompleted ? 'Completed' : b.status}
+                            </span>
+                          )}
                         </td>
                         <td className="px-8 py-5">
                           <code className="bg-slate-100 px-3 py-1.5 rounded-xl text-xs text-slate-600 font-bold">{b.ticketId}</code>
@@ -350,7 +420,30 @@ const AdminDashboard = () => {
                             <button onClick={() => setViewIntake(b)} className="p-2.5 hover:bg-emerald-50 rounded-2xl transition-all text-emerald-500" title="View Assessment">
                               <BrainCircuit className="w-4 h-4" />
                             </button>
-                            {b.status !== 'cancelled' && !b.sessionCompleted && (
+                            
+                            {b.cancelRequested && (
+                              <>
+                                <button onClick={() => handleApproveCancel(b._id)} className="p-2.5 hover:bg-rose-50 rounded-2xl transition-all text-rose-600" title="Approve Cancel & Refund">
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleRejectCancel(b._id)} className="p-2.5 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-slate-600" title="Reject Request">
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+
+                            {b.rescheduleRequested && (
+                              <>
+                                <button onClick={() => handleApproveReschedule(b._id)} className="p-2.5 hover:bg-blue-50 rounded-2xl transition-all text-blue-600" title="Approve Reschedule">
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleRejectReschedule(b._id)} className="p-2.5 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-slate-600" title="Reject Request">
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+
+                            {!b.cancelRequested && !b.rescheduleRequested && b.status !== 'cancelled' && !b.sessionCompleted && (
                               <>
                                 <button onClick={() => setSelectedBooking(b)} className="p-2.5 hover:bg-blue-50 rounded-2xl transition-all text-blue-500" title="Reschedule">
                                   <RefreshCw className="w-4 h-4" />

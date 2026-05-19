@@ -1,23 +1,41 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: hsl(155, 45%, 33%); /* Calm Emerald */
-  --color-primary-light: hsl(155, 45%, 96%);
-  --color-accent: hsl(35, 35%, 65%); /* Soft Sand */
+  --color-primary: hsl(155, 45%, 33%);
+  /* 
+    FIX: Tailwind v4 maps --color-{name} to bg-{name}.
+    Using --color-primaryLight so the class bg-primaryLight works correctly.
+    (--color-primary-light would generate bg-primary-light, not bg-primaryLight)
+  */
+  --color-primaryLight: hsl(155, 45%, 96%);
+  --color-accent: hsl(35, 35%, 65%);
   --color-slate-50: hsl(210, 20%, 98%);
-  
+
   --font-sans: "Outfit", "Inter", sans-serif;
 }
 
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900;
+    font-family: "Outfit", "Inter", sans-serif;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Consistent focus rings */
+  *:focus-visible {
+    outline: 2px solid hsl(155, 45%, 33%);
+    outline-offset: 2px;
   }
 }
 
+/* ── Mesh Gradient Background ──────────────────────────────────────────── */
 .bg-mesh-gradient {
   background-color: hsla(155, 45%, 96%, 1);
-  background-image: 
+  background-image:
     radial-gradient(at 10% 20%, hsla(155, 45%, 85%, 1) 0px, transparent 50%),
     radial-gradient(at 80% 0%, hsla(210, 20%, 90%, 1) 0px, transparent 50%),
     radial-gradient(at 0% 50%, hsla(35, 35%, 90%, 1) 0px, transparent 50%),
@@ -27,15 +45,69 @@
     radial-gradient(at 0% 0%, hsla(155, 45%, 92%, 1) 0px, transparent 50%);
 }
 
+/* ── Glass Card ────────────────────────────────────────────────────────── */
 .glass-card {
   @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-xl;
 }
 
+/* ── Animations ────────────────────────────────────────────────────────── */
 .animate-fade-in {
   animation: fadeIn 0.8s ease-out forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Scrollbar Hide ────────────────────────────────────────────────────── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Hero Visual Rings (for Home page) ──────────────────────────────────── */
+.hero-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(42, 91, 70, 0.12);
+  animation: ringPulse 4s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%       { transform: scale(1.05); opacity: 1; }
 }

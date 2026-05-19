@@ -1,32 +1,31 @@
 const User = require("../models/User");
 
-const adminMiddleware = async (req, res, next) => {
-  try {
-    // 1. Check if user exists (from authMiddleware)
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized access" });
-    }
+const authorizeRoles = (...allowedRoles) => {
+    return async (req, res, next) => {
+        try {
+            if (!req.user) {
+                return res.status(401).json({ success: false, message: "Unauthorized access" });
+            }
 
-    // 2. Fetch full user to check role and email
-    const user = await User.findById(req.user.id);
+            const user = await User.findById(req.user.id);
+            if (!user) {
+                return res.status(404).json({ success: false, message: "User not found" });
+            }
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+            // Temporarily allow 'admin' role as well for backward compatibility until DB migration is complete
+            if (!allowedRoles.includes(user.role) && user.role !== 'admin') {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: "Access Denied: You do not have permission to view this clinical resource." 
+                });
+            }
 
-    // 3. Strict Admin Verification
-    // Restricted to: dpsychologist01@gmail.com
-    const ADMIN_EMAIL = "dpsychologist01@gmail.com";
-
-    if (user.role !== "admin" || user.email !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: "Forbidden: Administrative rights required" });
-    }
-
-    next();
-  } catch (err) {
-    console.error("Admin Middleware Error:", err);
-    res.status(500).json({ error: "Server error during admin verification" });
-  }
+            next();
+        } catch (error) {
+            console.error("RBAC Middleware Error:", error);
+            res.status(500).json({ success: false, error: "Server error during role verification" });
+        }
+    };
 };
 
-module.exports = adminMiddleware;
+module.exports = authorizeRoles;

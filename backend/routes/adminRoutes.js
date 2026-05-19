@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
-const adminMiddleware = require("../middleware/adminMiddleware");
+const authorizeRoles = require("../middleware/adminMiddleware");
 const {
   getAllSessions,
   getAllUsers,
@@ -9,11 +9,15 @@ const {
   getAdminAnalytics,
   cancelSession,
   rescheduleSession,
-  completeSession
+  completeSession,
+  approveCancelRequest,
+  rejectCancelRequest,
+  approveRescheduleRequest,
+  rejectRescheduleRequest
 } = require("../controllers/adminController");
 
-// All admin routes are protected by both general auth and strict admin verification
-router.use(authMiddleware, adminMiddleware);
+// All admin routes are protected by both general auth and strict RBAC verification
+router.use(authMiddleware, authorizeRoles('practitioner', 'billing_admin', 'admin'));
 
 // Endpoints
 router.get("/sessions", getAllSessions);
@@ -23,5 +27,10 @@ router.delete("/users/:id", deleteUser);
 router.put("/sessions/:id/cancel", cancelSession);
 router.put("/sessions/:id/reschedule", rescheduleSession);
 router.put("/sessions/:id/complete", completeSession);
+
+router.put("/sessions/:id/approve-cancel", approveCancelRequest);
+router.put("/sessions/:id/reject-cancel", rejectCancelRequest);
+router.put("/sessions/:id/approve-reschedule", approveRescheduleRequest);
+router.put("/sessions/:id/reject-reschedule", rejectRescheduleRequest);
 
 module.exports = router;

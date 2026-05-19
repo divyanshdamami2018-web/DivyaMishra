@@ -19,7 +19,6 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: false
 };
-
 app.use(cors(corsOptions)); // Handle preflight for all routes
 
 // ── Body Parser ───────────────────────────────────────────────────────────────
@@ -28,7 +27,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── MongoDB ───────────────────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected ✅"))
+  .then(() => {
+    console.log("MongoDB Connected ✅");
+    require("./services/whatsappService"); // Boot up local WhatsApp client
+  })
   .catch(err => {
     console.error("MongoDB Connection Error ❌:", err.message);
     process.exit(1); // Exit if DB can't connect - Render will restart it
