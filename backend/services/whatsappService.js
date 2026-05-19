@@ -1,41 +1,60 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
+// Global handler to prevent WhatsApp library internal promise rejections from crashing the server
+process.on('unhandledRejection', (reason, promise) => {
+    console.warn('⚠️ WhatsApp service swallowed unhandled rejection:', reason?.message || reason);
+});
+
 let clientReady = false;
+
+const adminPhone = process.env.ADMIN_PHONE || "9929814206";
 
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './whatsapp-session' }),
     puppeteer: { 
         executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox',
+            '--disk-cache-size=0',
+            '--disable-application-cache',
+            '--disable-offline-load-stale-cache'
+        ],
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
     }
 });
 
-// Generate QR code for terminal authentication
-client.on('qr', async (qr) => {
+// Generate QR code for terminal authentication (fallback) and handle pairing code request
+client.on('qr', (qr) => {
     console.log('\n==================================================');
     console.log('📱 ACTION REQUIRED: Scan this QR code in WhatsApp');
     console.log('==================================================');
     qrcode.generate(qr, { small: true });
 
-    const adminPhone = process.env.ADMIN_PHONE;
     if (adminPhone) {
-        // Add 10s delay to allow WhatsApp scripts to fully initialize
-        setTimeout(async () => {
+        let pairingCodeGenerated = false;
+        
+        const tryRequestCode = async () => {
+            if (pairingCodeGenerated || clientReady) return;
             try {
                 console.log(`\n🔑 Requesting pairing code for Admin Phone: ${adminPhone}...`);
-                // Format to 91XXXXXXXXXX
                 const formattedPhone = `91${adminPhone.replace(/\D/g, "")}`;
                 const code = await client.requestPairingCode(formattedPhone);
                 console.log('\n==================================================');
                 console.log(`⭐ WHATSAPP PAIRING CODE: ${code}`);
                 console.log('==================================================');
                 console.log('Instructions: Open WhatsApp -> Linked Devices -> Link with phone number instead -> Enter the code above!\n');
+                pairingCodeGenerated = true;
             } catch (err) {
-                console.error('Failed to generate pairing code:', err.message);
+                console.error('\n⚠️ Failed to generate pairing code (Rate limited by WhatsApp):', err?.message || err);
+                console.log('💡 Note: WhatsApp rate limit cooldown is active. Retrying automatically in 30 seconds...\n');
+                setTimeout(tryRequestCode, 30000);
             }
-        }, 10000);
+        };
+
+        // Wait 15 seconds to let WhatsApp Web fully compile its linking modules in the browser!
+        setTimeout(tryRequestCode, 15000);
     }
 });
 
