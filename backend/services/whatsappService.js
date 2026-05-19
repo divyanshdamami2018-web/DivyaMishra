@@ -13,6 +13,7 @@ const adminPhone = process.env.ADMIN_PHONE || "9929814206";
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './whatsapp-session' }),
     puppeteer: { 
+        headless: false, // Opens a Chrome window so you can link your phone directly on screen!
         executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         args: [
             '--no-sandbox', 
