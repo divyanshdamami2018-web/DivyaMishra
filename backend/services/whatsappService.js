@@ -3,7 +3,6 @@ const qrcode = require('qrcode-terminal');
 
 let clientReady = false;
 
-// Initialize WhatsApp Client with LocalAuth
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './whatsapp-session' }),
     puppeteer: { 
@@ -22,18 +21,21 @@ client.on('qr', async (qr) => {
 
     const adminPhone = process.env.ADMIN_PHONE;
     if (adminPhone) {
-        try {
-            console.log(`\n🔑 Requesting pairing code for Admin Phone: ${adminPhone}...`);
-            // Format to 91XXXXXXXXXX
-            const formattedPhone = `91${adminPhone.replace(/\D/g, "")}`;
-            const code = await client.requestPairingCode(formattedPhone);
-            console.log('\n==================================================');
-            console.log(`⭐ WHATSAPP PAIRING CODE: ${code}`);
-            console.log('==================================================');
-            console.log('Instructions: Open WhatsApp -> Linked Devices -> Link with phone number instead -> Enter the code above!\n');
-        } catch (err) {
-            console.error('Failed to generate pairing code:', err.message);
-        }
+        // Add 10s delay to allow WhatsApp scripts to fully initialize
+        setTimeout(async () => {
+            try {
+                console.log(`\n🔑 Requesting pairing code for Admin Phone: ${adminPhone}...`);
+                // Format to 91XXXXXXXXXX
+                const formattedPhone = `91${adminPhone.replace(/\D/g, "")}`;
+                const code = await client.requestPairingCode(formattedPhone);
+                console.log('\n==================================================');
+                console.log(`⭐ WHATSAPP PAIRING CODE: ${code}`);
+                console.log('==================================================');
+                console.log('Instructions: Open WhatsApp -> Linked Devices -> Link with phone number instead -> Enter the code above!\n');
+            } catch (err) {
+                console.error('Failed to generate pairing code:', err.message);
+            }
+        }, 10000);
     }
 });
 
